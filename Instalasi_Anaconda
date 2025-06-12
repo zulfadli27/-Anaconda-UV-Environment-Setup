@@ -1,0 +1,41 @@
+Cara Memasang Anaconda
+Langkah 1: Pertama, Anda harus menuju ke  https://www.anaconda.com/products/individual#download-section . Anda akan melihat gambar di bawah ini.
+
+
+
+Langkah 2: Klik tombol unduh. Ikon sistem operasi yang Anda gunakan akan ditampilkan di samping kata "unduh". Jika tidak, klik di bawah tombol unduh untuk mendapatkan penginstal tambahan. Harap bersabar karena pengunduhan dapat memakan waktu.
+
+
+
+Langkah 3: Buka unduhan Anda dan klik dua kali pada berkas yang baru diunduh untuk memulai proses instalasi. Anda akan melihat penginstal yang mirip dengan gambar kedua di bawah ini. Mungkin perlu beberapa saat agar penginstal melakukan booting.
+
+
+
+
+
+Langkah 4: Klik berikutnya untuk membuka perjanjian lisensi. Di halaman ini, baca perjanjian lisensi dengan saksama lalu klik "Saya setuju" untuk melanjutkan.
+
+
+
+Langkah 5: Selanjutnya Anda akan memilih jenis instalasi. Pilih "Just Me (recommended)" dan klik next.
+
+
+
+Langkah 6: Selanjutnya, Anda akan memilih lokasi penginstal. Kami sarankan untuk menggunakan lokasi yang disarankan oleh penginstal. Klik berikutnya.
+
+
+
+Langkah 7: Centang kotak di samping "Buat pintasan menu mulai" dan "Daftarkan Anaconda3 sebagai Python 3.11 default saya." Kami tidak menyarankan menambahkan Anaconda3 ke PATH pada komputer Windows.
+
+
+
+Langkah 8: Proses instalasi akan dimulai dan mungkin memerlukan waktu yang lama, jadi harap bersabar. Setelah instalasi selesai, klik berikutnya.
+
+
+
+Langkah 9: Klik berikutnya.
+
+
+
+Langkah 10: Centang kedua kotak dan klik "Selesai" untuk meluncurkan Anaconda Navigator.
+
