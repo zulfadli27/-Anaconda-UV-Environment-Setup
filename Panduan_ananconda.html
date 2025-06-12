@@ -1,0 +1,704 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panduan Lengkap: Pengaturan Lingkungan Anaconda & UV</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #ffffff;
+            color: #333;
+        }
+        header {
+            background-color: #43b02a;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+        }
+        .copyright {
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+        #datetime {
+            font-size: 0.8rem;
+            margin-top: 5px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        section {
+            margin-bottom: 40px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #43b02a;
+            border-bottom: 2px solid #43b02a;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #333;
+            margin-top: 20px;
+        }
+        pre {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        code {
+            font-family: Consolas, monospace;
+        }
+        .note {
+            background-color: #e7f3e7;
+            padding: 15px;
+            border-left: 5px solid #43b02a;
+            margin: 15px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-left: 5px solid #ffc107;
+            margin: 15px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #43b02a;
+            color: white;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #43b02a;
+            color: white;
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Panduan Lengkap: Pengaturan Lingkungan Anaconda & UV</h1>
+        <p class="copyright">Anaconda & UV Package Environment © 2025 Arry Hutomo. All Rights Reserved</p>
+        <div id="datetime"></div>
+    </header>
+
+    <div class="container">
+        <section id="introduction">
+            <h2>Pendahuluan</h2>
+            <p><strong>Apa:</strong> Panduan ini menyediakan langkah-langkah lengkap untuk menyiapkan lingkungan pengembangan Python menggunakan Anaconda dan UV, alat yang digunakan untuk mengelola lingkungan dan paket Python. Anaconda adalah distribusi Python dengan paket bawaan untuk komputasi ilmiah, sedangkan UV menawarkan kecepatan dalam manajemen lingkungan virtual.</p>
+            <p><strong>Kenapa:</strong> Lingkungan pengembangan yang terisolasi mencegah konflik antar proyek, terutama dalam Data Science, Machine Learning, dan AI. Anaconda menyederhanakan instalasi paket ilmiah, dan UV mempercepat proses manajemen dependensi. Dengan setup yang tepat, Anda dapat bekerja lebih efisien dan menghindari masalah kompatibilitas.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Ikuti setiap langkah dengan teliti untuk konfigurasi yang benar.</li>
+                <li><strong>Don't:</strong> Jangan lewati verifikasi karena ini mendeteksi masalah sejak dini.</li>
+            </ul>
+            <p>Panduan ini mencakup instalasi Anaconda, konfigurasi PATH, pengaturan VS Code, pembuatan lingkungan Conda dan UV, pengaturan Jupyter Notebook, perbandingan Conda dan UV, daftar paket yang direkomendasikan, dan pemecahan masalah. Tutorial ini untuk pemula, dengan fokus pada Windows, meskipun konsepnya berlaku untuk macOS dan Linux dengan sedikit penyesuaian.</p>
+            <div class="note">
+                <strong>Catatan:</strong> Pastikan koneksi internet stabil selama instalasi.
+            </div>
+        </section>
+
+        <section id="anaconda-installation">
+            <h2>1. Instalasi Anaconda</h2>
+            <h3>1.1 Mengunduh Anaconda</h3>
+            <p><strong>Apa:</strong> Anaconda adalah distribusi Python yang menyertakan ratusan paket siap pakai, ideal untuk analisis data dan komputasi ilmiah.</p>
+            <p><strong>Kenapa:</strong> Mengunduh Anaconda memberikan akses ke alat-alat penting untuk Data Science tanpa instalasi paket manual. Ini memastikan kompatibilitas dan menghemat waktu.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Pilih Python 3.12 untuk kompatibilitas maksimal.</li>
+                <li><strong>Don't:</strong> Hindari versi 32-bit kecuali perangkat Anda tidak mendukung 64-bit.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Kunjungi <a href="https://www.anaconda.com/download">https://www.anaconda.com/download</a>.</li>
+                <li>Pilih penginstal: <strong>Windows Python 3.12 64-Bit Graphical Installer (921.3MB)</strong>.</li>
+                <li>Simpan file di Desktop atau folder Unduhan.</li>
+            </ol>
+
+            <h3>1.2 Proses Instalasi</h3>
+            <p><strong>Apa:</strong> Instalasi melibatkan menjalankan file penginstal dan mengatur konfigurasi sistem.</p>
+            <p><strong>Kenapa:</strong> Instalasi yang benar memungkinkan Anaconda terintegrasi dengan sistem, sehingga perintah Conda dan Python dapat diakses dari terminal.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Centang opsi untuk menambahkan Anaconda ke PATH.</li>
+                <li><strong>Don't:</strong> Jangan ubah lokasi instalasi default tanpa alasan kuat.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Klik dua kali <code>Anaconda3-2024.10-1-Windows-x86_64.exe</code>.</li>
+                <li>Klik "Next" pada layar sambutan.</li>
+                <li>Setujui syarat lisensi.</li>
+                <li>Pilih "Just Me (recommended)".</li>
+                <li>Gunakan lokasi default (<code>C:\Users\NAMA_ANDA\anaconda3</code>).</li>
+                <li>Centang:
+                    <ul>
+                        <li>✓ Tambahkan Anaconda3 ke PATH.</li>
+                        <li>✓ Jadikan Anaconda3 sebagai Python 3.12 default.</li>
+                    </ul>
+                </li>
+                <li>Klik "Install" dan tunggu selesai.</li>
+            </ol>
+            <div class="warning">
+                <strong>Peringatan:</strong> Jika lupa mencentang "Tambahkan ke PATH", Anda harus mengatur PATH secara manual.
+            </div>
+
+            <h3>1.3 Verifikasi</h3>
+            <p><strong>Apa:</strong> Verifikasi memastikan Anaconda terinstal dan dapat diakses.</p>
+            <p><strong>Kenapa:</strong> Ini mendeteksi masalah seperti PATH yang salah, memungkinkan perbaikan dini.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Buka terminal baru untuk menerapkan perubahan PATH.</li>
+                <li><strong>Don't:</strong> Jangan abaikan pesan kesalahan.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Buka Command Prompt.</li>
+                <li>Ketik dan eksekusi:
+                    <pre><code>conda --version</code></pre>
+                </li>
+                <li>Output seperti <code>conda 24.1.0</code> menunjukkan keberhasilan.</li>
+            </ol>
+            <div class="note">
+                <strong>Keberhasilan:</strong> Nomor versi mengonfirmasi instalasi berhasil.
+            </div>
+        </section>
+
+        <section id="path-configuration">
+            <h2>2. Konfigurasi Variabel Lingkungan PATH</h2>
+            <p><strong>Apa:</strong> PATH memberi tahu sistem operasi lokasi program seperti Conda dan Python.</p>
+            <p><strong>Kenapa:</strong> Tanpa PATH yang benar, perintah Anaconda tidak dapat dijalankan dari terminal.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Verifikasi semua jalur ditambahkan.</li>
+                <li><strong>Don't:</strong> Jangan hapus entri PATH lain.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Tekan <code>Windows + R</code>, ketik <code>sysdm.cpl</code>, tekan Enter.</li>
+                <li>Pergi ke tab "Advanced", klik "Environment Variables".</li>
+                <li>Pilih "Path" di "System variables", klik "Edit".</li>
+                <li>Tambahkan (ganti NAMA_ANDA):
+                    <pre><code>C:\Users\NAMA_ANDA\anaconda3
+C:\Users\NAMA_ANDA\anaconda3\Library\mingw-w64\bin
+C:\Users\NAMA_ANDA\anaconda3\Library\usr\bin
+C:\Users\NAMA_ANDA\anaconda3\Library\bin
+C:\Users\NAMA_ANDA\anaconda3\Scripts</code></pre>
+                </li>
+                <li>Klik "OK".</li>
+            </ol>
+            <div class="note">
+                <strong>Tip:</strong> Jalur mungkin bervariasi berdasarkan versi Anaconda.
+            </div>
+        </section>
+
+        <section id="vscode-setup">
+            <h2>3. Pengaturan Visual Studio Code</h2>
+            <h3>3.1 Menginstal VS Code</h3>
+            <p><strong>Apa:</strong> VS Code adalah editor kode yang mendukung pengembangan Python.</p>
+            <p><strong>Kenapa:</strong> VS Code menyediakan fitur debugging dan integrasi Jupyter, ideal untuk Data Science.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Centang semua opsi integrasi Windows.</li>
+                <li><strong>Don't:</strong> Jangan lewati instalasi VS Code.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Unduh dari <a href="https://code.visualstudio.com/">https://code.visualstudio.com/</a>.</li>
+                <li>Centang saat instalasi:
+                    <ul>
+                        <li>✓ Tambahkan "Buka dengan Code" ke Explorer.</li>
+                        <li>✓ Daftarkan Code sebagai editor.</li>
+                        <li>✓ Tambahkan ke PATH.</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <h3>3.2 Ekstensi Penting</h3>
+            <p><strong>Apa:</strong> Ekstensi meningkatkan fungsi VS Code untuk Python dan Jupyter.</p>
+            <p><strong>Kenapa:</strong> Ekstensi seperti Python dan Jupyter mempermudah penulisan dan debugging kode.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Instal ekstensi resmi Microsoft.</li>
+                <li><strong>Don't:</strong> Hindari ekstensi yang tidak perlu.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Buka VS Code.</li>
+                <li>Instal:
+                    <ul>
+                        <li>Python (Microsoft)</li>
+                        <li>Jupyter (Microsoft)</li>
+                    </ul>
+                </li>
+                <li>Gunakan <code>Ctrl+Shift+X</code> untuk panel ekstensi.</li>
+            </ol>
+
+            <h3>3.3 Membuat Folder Proyek</h3>
+            <p><strong>Apa:</strong> Folder proyek menyimpan semua file proyek Anda.</p>
+            <p><strong>Kenapa:</strong> Folder khusus memudahkan pengelolaan file dan isolasi lingkungan.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Gunakan nama folder yang jelas.</li>
+                <li><strong>Don't:</strong> Hindari lokasi sulit seperti drive eksternal.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Buka Command Prompt:
+                    <ul>
+                        <li>Tekan <code>Windows + R</code>, ketik <code>cmd</code>, tekan Enter.</li>
+                    </ul>
+                </li>
+                <li>Buat folder:
+                    <ul>
+                        <li>Ketik: <pre><code>mkdir C:\Users\NAMA_ANDA\ghost_intellix</code></pre></li>
+                        <li>Tekan Enter untuk mengeksekusi.</li>
+                    </ul>
+                </li>
+                <li>Pindah ke folder:
+                    <ul>
+                        <li>Ketik: <pre><code>cd C:\Users\NAMA_ANDA\ghost_intellix</code></pre></li>
+                        <li>Tekan Enter untuk mengeksekusi.</li>
+                    </ul>
+                </li>
+                <li>Buka VS Code:
+                    <ul>
+                        <li>Ketik: <pre><code>code .</code></pre></li>
+                        <li>Tekan Enter untuk mengeksekusi.</li>
+                    </ul>
+                </li>
+            </ol>
+            <p>Perintah ini membuat folder <code>ghost_intellix</code>, pindah ke dalamnya, dan membuka VS Code di direktori tersebut.</p>
+        </section>
+
+        <section id="conda-environment">
+            <h2>4. Lingkungan Conda</h2>
+            <h3>4.1 Membuat Lingkungan Conda</h3>
+            <p><strong>Apa:</strong> Lingkungan Conda adalah ruang terisolasi untuk Python dan paket proyek.</p>
+            <p><strong>Kenapa:</strong> Isolasi mencegah konflik versi paket, memastikan stabilitas.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Beri nama lingkungan yang relevan.</li>
+                <li><strong>Don't:</strong> Jangan buat di direktori tidak terkait.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Di terminal VS Code (<code>Ctrl+`</code>), ketik:
+                    <pre><code>conda create -p venv python=3.12</code></pre>
+                </li>
+                <li>Ketik <code>y</code> saat diminta.</li>
+            </ol>
+
+            <h3>4.2 Mengaktifkan Lingkungan</h3>
+            <p><strong>Apa:</strong> Aktivasi menggunakan Python dan paket dari lingkungan Conda.</p>
+            <p><strong>Kenapa:</strong> Ini memastikan perintah menggunakan lingkungan proyek, bukan dasar.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Periksa prompt untuk konfirmasi aktivasi.</li>
+                <li><strong>Don't:</strong> Jangan jalankan perintah sebelum aktif.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>conda activate venv/</code></pre>
+                </li>
+                <li>Prompt berubah ke <code>(venv) C:\Users\NAMA_ANDA\ghost_intellix></code>.</li>
+            </ol>
+
+            <h3>4.3 Menginstal Paket</h3>
+            <p><strong>Apa:</strong> Instalasi paket menambahkan pustaka untuk proyek.</p>
+            <p><strong>Kenapa:</strong> Paket seperti pandas dan numpy penting untuk analisis data.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Gunakan <code>requirements.txt</code> untuk manajemen.</li>
+                <li><strong>Don't:</strong> Hindari instalasi di lingkungan dasar.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Buat file <code>requirements.txt</code> di VS Code:
+                    <ul>
+                        <li>Buka VS Code di folder <code>C:\Users\NAMA_ANDA\ghost_intellix</code> (dari langkah 3.3).</li>
+                        <li>Klik menu <code>File</code> → <code>New File</code>, atau klik kanan di Explorer pane → <code>New File</code>.</li>
+                        <li>Namai file <code>requirements.txt</code> dan tekan Enter.</li>
+                        <li>Ketik konten berikut:
+                            <pre><code>pandas
+numpy
+matplotlib</code></pre>
+                        </li>
+                        <li>Simpan file dengan <code>File</code> → <code>Save</code> atau <code>Ctrl+S</code>.</li>
+                        <li>Pastikan file berada di root folder proyek (<code>C:\Users\NAMA_ANDA\ghost_intellix</code>).</li>
+                    </ul>
+                </li>
+                <li>Di terminal VS Code, dengan lingkungan aktif, ketik:
+                    <pre><code>pip install -r requirements.txt</code></pre>
+                </li>
+            </ol>
+
+            <h3>4.4 Menonaktifkan Lingkungan</h3>
+            <p><strong>Apa:</strong> Menonaktifkan mengembalikan ke lingkungan dasar.</p>
+            <p><strong>Kenapa:</strong> Ini mencegah perubahan tak sengaja pada lingkungan proyek.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Nonaktifkan setelah selesai.</li>
+                <li><strong>Don't:</strong> Jangan biarkan aktif saat tidak diperlukan.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>conda deactivate</code></pre>
+                </li>
+                <li>Prompt kembali ke <code>C:\Users\NAMA_ANDA\ghost_intellix></code>.</li>
+            </ol>
+        </section>
+
+        <section id="uv-environment">
+            <h2>5. Lingkungan UV</h2>
+            <h3>5.1 Menginstal UV</h3>
+            <p><strong>Apa:</strong> UV adalah alat manajemen paket dan lingkungan berbasis Rust yang cepat.</p>
+            <p><strong>Kenapa:</strong> UV mempercepat instalasi paket, ideal untuk proyek dengan banyak dependensi.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Pastikan lingkungan Conda tidak aktif.</li>
+                <li><strong>Don't:</strong> Jangan gunakan UV untuk paket khusus Conda.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Pastikan lingkungan Conda tidak aktif (jalankan <code>conda deactivate</code> jika perlu).</li>
+                <li>Ketik:
+                    <pre><code>pip install uv</code></pre>
+                </li>
+                <li>Output seperti <code>Successfully installed uv-0.7.12</code> menunjukkan keberhasilan.</li>
+                <li><strong>Catatan tentang folder ghost_intellixuv:</strong> Folder <code>ghost_intellixuv</code> akan dibuat di langkah berikutnya (5.2) menggunakan <code>uv init</code>. Perintah ini otomatis membuat folder jika belum ada, karena UV dirancang untuk menginisialisasi direktori proyek baru secara langsung. Anda tidak perlu membuat folder ini secara manual sebelum menjalankan <code>uv init</code>. Untuk memverifikasi folder setelah inisialisasi, ketik <code>dir</code> di CMD untuk melihat daftar direktori.</li>
+            </ol>
+
+            <h3>5.2 Menginisialisasi Proyek UV</h3>
+            <p><strong>Apa:</strong> Inisialisasi membuat struktur proyek UV.</p>
+            <p><strong>Kenapa:</strong> Ini menyiapkan direktori proyek dan lingkungan virtual.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Gunakan nama proyek yang jelas.</li>
+                <li><strong>Don't:</strong> Jangan inisialisasi di direktori proyek lain.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>uv init ghost_intellixuv
+cd ghost_intellixuv</code></pre>
+                </li>
+                <li>Output menunjukkan proyek diinisialisasi di <code>C:\Users\NAMA_ANDA\ghost_intellix\ghost_intellixuv</code>.</li>
+            </ol>
+
+            <h3>5.3 Membuat dan Mengaktifkan Lingkungan UV</h3>
+            <p><strong>Apa:</strong> Lingkungan virtual UV mengisolasi dependensi proyek.</p>
+            <p><strong>Kenapa:</strong> Isolasi mencegah konflik antar proyek.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Aktifkan sebelum instalasi paket.</li>
+                <li><strong>Don't:</strong> Jangan ubah folder <code>.venv</code> manual.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>uv venv</code></pre>
+                </li>
+                <li>Aktifkan:
+                    <pre><code>.venv\Scripts\activate</code></pre>
+                </li>
+                <li>Prompt berubah ke <code>(ghost_intellixuv) C:\Users\NAMA_ANDA\ghost_intellix\ghost_intellixuv></code>.</li>
+            </ol>
+
+            <h3>5.4 Menginstal Paket dengan UV</h3>
+            <p><strong>Apa:</strong> UV menginstal paket dengan cepat menggunakan antarmuka pip.</p>
+            <p><strong>Kenapa:</strong> Kecepatan UV menghemat waktu untuk dependensi besar.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Gunakan <code>uv add</code>.</li>
+                <li><strong>Don't:</strong> Jangan campur UV dan pip.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>uv add pandas</code></pre>
+                </li>
+                <li>Output seperti:
+                    <pre><code>Resolved 7 packages in 244ms
+Installed 6 packages in 663ms
+ + numpy==2.3.0
+ + pandas==2.3.0
+ + python-dateutil==2.9.0.post0
+ + pytz==2025.2
+ + six==1.17.0
+ + tzdata==2025.2</code></pre>
+                </li>
+            </ol>
+            <div class="note">
+                <strong>Catatan:</strong> UV lebih cepat untuk pohon dependensi besar.
+            </div>
+
+            <h3>5.5 Menonaktifkan Lingkungan UV</h3>
+            <p><strong>Apa:</strong> Menonaktifkan mengembalikan ke lingkungan global.</p>
+            <p><strong>Kenapa:</strong> Ini mencegah perubahan tak sengaja.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Nonaktifkan setelah selesai.</li>
+                <li><strong>Don't:</strong> Jangan biarkan aktif.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Ketik:
+                    <pre><code>.venv\Scripts\deactivate</code></pre>
+                </li>
+                <li>Prompt kembali ke <code>C:\Users\NAMA_ANDA\ghost_intellix\ghost_intellixuv></code>.</li>
+            </ol>
+        </section>
+
+        <section id="jupyter-setup">
+            <h2>6. Pengaturan Jupyter Notebook</h2>
+            <h3>6.1 Membuat Notebook</h3>
+            <p><strong>Apa:</strong> Jupyter Notebook memungkinkan kode, teks, dan visualisasi dalam satu dokumen.</p>
+            <p><strong>Kenapa:</strong> Ideal untuk eksplorasi data interaktif.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Simpan di folder proyek.</li>
+                <li><strong>Don't:</strong> Jangan buat di luar lingkungan virtual.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Di VS Code, buat folder <code>1-Langchain</code>.</li>
+                <li>Klik kanan → <code>New File</code> → <code>test.ipynb</code>.</li>
+            </ol>
+
+            <h3>6.2 Memilih Kernel</h3>
+            <p><strong>Apa:</strong> Kernel menentukan lingkungan Python untuk notebook.</p>
+            <p><strong>Kenapa:</strong> Kernel yang benar memastikan akses ke paket proyek.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Verifikasi kernel sesuai lingkungan.</li>
+                <li><strong>Don't:</strong> Jangan gunakan kernel sistem default.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Klik pemilih kernel di kanan atas notebook.</li>
+                <li>Pilih <code>.venv (Python 3.12.7) ghost_intellixuv\.venv\Scripts\python.exe</code>.</li>
+                <li>Alternatif: <code>Ctrl+Shift+P</code> → "Select Kernel".</li>
+            </ol>
+        </section>
+
+        <section id="conda-vs-uv">
+            <h2>7. Perbandingan Conda vs UV</h2>
+            <p><strong>Apa:</strong> Perbandingan fitur Conda dan UV.</p>
+            <p><strong>Kenapa:</strong> Membantu memilih alat sesuai kebutuhan proyek.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Gunakan Conda untuk ilmiah, UV untuk cepat.</li>
+                <li><strong>Don't:</strong> Jangan campur keduanya tanpa alasan.</li>
+            </ul>
+            <table>
+                <tr>
+                    <th>Fitur</th>
+                    <th>Conda</th>
+                    <th>UV</th>
+                </tr>
+                <tr>
+                    <td>Kecepatan Instalasi</td>
+                    <td>Sedang</td>
+                    <td>Sangat Cepat (Rust)</td>
+                </tr>
+                <tr>
+                    <td>Manajemen Paket</td>
+                    <td>Terintegrasi</td>
+                    <td>Kompatibel pip</td>
+                </tr>
+                <tr>
+                    <td>Pembuatan Lingkungan</td>
+                    <td><code>conda create</code></td>
+                    <td><code>uv venv</code></td>
+                </tr>
+                <tr>
+                    <td>Aktivasi Lingkungan</td>
+                    <td><code>conda activate</code></td>
+                    <td><code>.venv\Scripts\activate</code></td>
+                </tr>
+                <tr>
+                    <td>Lintas Platform</td>
+                    <td>Ya</td>
+                    <td>Ya</td>
+                </tr>
+                <tr>
+                    <td>Terbaik Untuk</td>
+                    <td>Komputasi ilmiah</td>
+                    <td>Pengembangan cepat</td>
+                </tr>
+            </table>
+        </section>
+
+        <section id="recommended-packages">
+            <h2>8. Daftar Paket yang Direkomendasikan</h2>
+            <p><strong>Apa:</strong> Paket penting untuk Data Science, Machine Learning, dan AI.</p>
+            <p><strong>Kenapa:</strong> Memastikan alat yang diperlukan tersedia.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Perbarui versi paket secara berkala.</li>
+                <li><strong>Don't:</strong> Jangan instal paket yang tidak diperlukan.</li>
+            </ul>
+            <p><strong>Langkah-langkah:</strong></p>
+            <ol>
+                <li>Buat <code>requirements.txt</code>:
+                    <pre><code># Data Science
+pandas==2.3.0
+numpy==2.3.0
+matplotlib==3.9.2
+seaborn==0.13.2
+
+# Machine Learning
+scikit-learn==1.5.2
+xgboost==2.1.1
+lightgbm==4.5.0
+
+# AI dan Model Bahasa
+langchain==0.3.2
+langgraph==0.2.34
+openai==1.51.0
+huggingface_hub==0.26.0
+
+# Jupyter dan Pengembangan
+ipykernel==6.29.5
+jupyter==1.1.1
+
+# Utilitas
+python-dotenv==1.0.1
+requests==2.32.3</code></pre>
+                </li>
+                <li>Instal:
+                    <pre><code>uv add -r requirements.txt</code></pre>
+                    atau
+                    <pre><code>pip install -r requirements.txt</code></pre>
+                </li>
+            </ol>
+        </section>
+
+        <section id="troubleshooting">
+            <h2>9. Panduan Pemecahan Masalah</h2>
+            <p><strong>Apa:</strong> Solusi untuk masalah umum selama pengaturan.</p>
+            <p><strong>Kenapa:</strong> Memecahkan masalah cepat meminimalkan hambatan.</p>
+            <p><strong>Do and Don'ts:</strong></p>
+            <ul>
+                <li><strong>Do:</strong> Catat pesan kesalahan.</li>
+                <li><strong>Don't:</strong> Jangan abaikan peringatan.</li>
+            </ul>
+            <h3>Masalah 1: Perintah Conda Tidak Dikenali</h3>
+            <p><strong>Gejala:</strong> <code>'conda' is not recognized</code></p>
+            <p><strong>Solusi:</strong></p>
+            <ol>
+                <li>Verifikasi instalasi Anaconda.</li>
+                <li>Periksa PATH.</li>
+                <li>Jalankan <code>conda init cmd.exe</code>, mulai ulang terminal.</li>
+            </ol>
+
+            <h3>Masalah 2: Aktivasi Lingkungan Gagal</h3>
+            <p><strong>Gejala:</strong> <code>Script execution is disabled</code></p>
+            <p><strong>Solusi:</strong></p>
+            <ol>
+                <li>Jalankan PowerShell sebagai Administrator.</li>
+                <li>Ketik <code>Set-ExecutionPolicy RemoteSigned</code>.</li>
+                <li>Pilih "Y".</li>
+            </ol>
+
+            <h3>Masalah 3: Kesalahan Instalasi Paket</h3>
+            <p><strong>Gejala:</strong> <code>Could not find a version</code></p>
+            <p><strong>Solusi:</strong></p>
+            <ol>
+                <li>Perbarui pip: <code>python -m pip install --upgrade pip</code>.</li>
+                <li>Periksa kompatibilitas Python.</li>
+                <li>Coba versi paket lain.</li>
+            </ol>
+        </section>
+    </div>
+
+    <footer>
+        <p>Anaconda & UV Package Environment © 2025 Arry Hutomo. All Rights Reserved</p>
+    </footer>
+
+    <script>
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            };
+            document.getElementById('datetime').textContent = now.toLocaleString('id-ID', options);
+        }
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+    </script>
+</body>
+</html>
+</html>
